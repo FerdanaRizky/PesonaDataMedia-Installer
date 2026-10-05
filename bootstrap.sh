@@ -5,42 +5,135 @@ REPO="FerdanaRizky/installer-pesonawifi"
 FILE="install.sh"
 TMP="/tmp/pesonawifi-installer.sh"
 
+OS_NAME="unknown"
+PKG=""
+
+info(){ echo "[INFO] $1"; }
+ok(){ echo "[ OK ] $1"; }
+fail(){ echo "[ERROR] $1"; exit 1; }
+
+detect_os(){
+  if [ -r /etc/os-release ]; then
+    . /etc/os-release
+    OS_NAME="${PRETTY_NAME:-${ID:-unknown}}"
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    PKG="apt"
+  elif command -v dnf >/dev/null 2>&1; then
+    PKG="dnf"
+  elif command -v yum >/dev/null 2>&1; then
+    PKG="yum"
+  elif command -v zypper >/dev/null 2>&1; then
+    PKG="zypper"
+  elif command -v apk >/dev/null 2>&1; then
+    PKG="apk"
+  else
+    fail "Package manager tidak didukung."
+  fi
+}
+
+install_pkg(){
+  case "$PKG" in
+    apt)
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -y
+      apt-get install -y "$@"
+      ;;
+    dnf)
+      dnf install -y "$@"
+      ;;
+    yum)
+      yum install -y "$@"
+      ;;
+    zypper)
+      zypper --non-interactive refresh
+      zypper --non-interactive install "$@"
+      ;;
+    apk)
+      apk add --no-cache "$@"
+      ;;
+  esac
+}
+
+check_aapanel(){
+  [ -d "/www/server/panel" ] || fail "INSTALLER INI KHUSUS UNTUK aaPanel. aaPanel tidak ditemukan."
+}
+
+install_dependencies(){
+  command -v git >/dev/null 2>&1 || install_pkg git
+  command -v curl >/dev/null 2>&1 || install_pkg curl ca-certificates
+
+  if ! command -v gh >/dev/null 2>&1; then
+    install_pkg gh || true
+  fi
+
+  command -v gh >/dev/null 2>&1 || fail "GitHub CLI (gh) tidak tersedia pada OS ini."
+}
+
+github_login(){
+  if gh auth status --hostname github.com >/dev/null 2>&1; then
+    ok "GitHub sudah login."
+  else
+    echo
+    echo "============================================================"
+    echo "                    GITHUB LOGIN"
+    echo "============================================================"
+    echo
+    echo "Server ini menggunakan terminal/headless mode."
+    echo "Kode login akan muncul di bawah."
+    echo "Buka URL device dari komputer/HP Anda dan masukkan kode tersebut."
+    echo
+    GH_BROWSER=false gh auth login --hostname github.com
+  fi
+
+  gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
+  gh auth setup-git >/dev/null 2>&1 || true
+  ok "GitHub authentication aktif."
+}
+
+fetch_installer(){
+  rm -f "$TMP"
+
+  info "Mengambil installer utama Private..."
+
+  gh api "repos/$REPO/contents/$FILE" --jq ".content" |
+    tr -d "\n" |
+    base64 -d > "$TMP"
+
+  [ -s "$TMP" ] || fail "Gagal mengambil installer utama Private."
+
+  chmod 700 "$TMP"
+  ok "Installer utama berhasil diambil."
+}
+
+cleanup(){
+  rm -f "$TMP" 2>/dev/null || true
+}
+trap cleanup EXIT
+
 echo
 echo "============================================================"
 echo "        PESONA DATA MEDIA - INSTALLER"
 echo "============================================================"
 echo
 
-[ "$(id -u)" -eq 0 ] || { echo "[ERROR] Jalankan sebagai root."; exit 1; }
-[ -d "/www/server/panel" ] || { echo "[ERROR] INSTALLER INI KHUSUS UNTUK aaPanel"; exit 1; }
+[ "$(id -u)" -eq 0 ] || fail "Jalankan sebagai root."
+detect_os
+check_aapanel
 
-if ! command -v git >/dev/null 2>&1; then
-  apt-get update -y
-  apt-get install -y git
-fi
+echo "  OS              : $OS_NAME"
+echo "  Package Manager : $PKG"
+echo
 
-if ! command -v gh >/dev/null 2>&1; then
-  apt-get update -y
-  apt-get install -y gh
-fi
+install_dependencies
+github_login
+fetch_installer
 
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-  gh auth login --hostname github.com --git-protocol https
-fi
+echo
+echo "============================================================"
+echo "             MENJALANKAN INSTALLER UTAMA"
+echo "============================================================"
+echo
 
-gh auth setup-git >/dev/null 2>&1 || true
-gh auth status --hostname github.com >/dev/null 2>&1 || {
-  echo "[ERROR] GitHub login gagal."
-  exit 1
-}
-
-rm -f "$TMP"
-gh api "repos/$REPO/contents/$FILE" --jq '.content' | tr -d '\n' | base64 -d > "$TMP"
-
-[ -s "$TMP" ] || { echo "[ERROR] Gagal mengambil installer private."; rm -f "$TMP"; exit 1; }
-
-chmod 700 "$TMP"
 bash "$TMP"
-RC=$?
-rm -f "$TMP"
-exit "$RC"
