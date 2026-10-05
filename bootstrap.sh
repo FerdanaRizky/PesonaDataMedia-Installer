@@ -76,27 +76,37 @@ install_dependencies(){
 
 github_login(){
   if gh auth status --hostname github.com >/dev/null 2>&1; then
-    ok "GitHub sudah login."
-  else
-    echo
-    echo "============================================================"
-    echo "                    PERMINTAAN AKSES"
-    echo "============================================================"
-    echo
-    echo "Kode token akan muncul di bawah."
-    echo "Konfirmasi owner untuk lanjut."
-    echo
-    mkdir -p "$GH_CONFIG_DIR"
-    mkdir -p "$(dirname "$GIT_CONFIG_GLOBAL")"
-    gh config set git_protocol https --host github.com
-    GH_BROWSER=echo gh auth login --hostname github.com --web </dev/tty
+    ok "GitHub sudah login untuk sesi installer."
+    return 0
   fi
 
-  gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
-  gh auth setup-git >/dev/null 2>&1 || true
-  ok "GitHub authentication aktif."
-}
+  echo
+  echo "============================================================"
+  echo "                    GITHUB LOGIN"
+  echo "============================================================"
+  echo
+  echo "Repository Pesona WiFi bersifat PRIVATE."
+  echo "Metode Git hanya HTTPS. Tidak ada pilihan SSH."
+  echo
+  echo "Paste Personal Access Token GitHub lalu tekan ENTER."
+  echo "Token tidak akan ditampilkan."
+  echo
 
+  gh config set git_protocol https --host github.com
+
+  if ! gh auth login --hostname github.com --with-token < /dev/tty; then
+    fail "Login GitHub gagal."
+  fi
+
+  gh auth setup-git >/dev/null 2>&1 || true
+
+  if ! gh auth status --hostname github.com >/dev/null 2>&1; then
+    fail "GitHub authentication gagal."
+  fi
+
+  ok "GitHub authentication aktif melalui HTTPS."
+}
+ 
 fetch_installer(){
   rm -f "$TMP"
 
