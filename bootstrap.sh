@@ -141,10 +141,8 @@ install_gh(){
     fail "GitHub CLI terlalu lama dan belum mendukung HTTPS-only login."
 }
 github_login(){
-  mkdir -p "$GH_CONFIG_DIR" "$(dirname "$GIT_CONFIG_GLOBAL")"
-
   if gh auth status --hostname github.com >/dev/null 2>&1; then
-    ok "GitHub sudah login untuk sesi installer ini."
+    ok "GitHub sudah login untuk sesi installer."
     gh auth setup-git >/dev/null 2>&1 || true
     return 0
   fi
@@ -154,20 +152,16 @@ github_login(){
   echo "                    GITHUB LOGIN"
   echo "============================================================"
   echo
-  echo "Git protocol : HTTPS"
-  echo "SSH          : TIDAK DIGUNAKAN"
+  echo "Login menggunakan alur interaktif GitHub CLI."
+  echo "Pilih HTTPS saat diminta."
+  echo "Jawab Yes untuk menggunakan GitHub credentials."
+  echo "Kode autentikasi akan muncul di terminal."
   echo
-  echo "Login akan memakai HTTPS dan device code."
-  echo "Buka https://github.com/login/device dari HP/PC Anda."
-  echo
-
-  gh config set git_protocol https --host github.com
-
-  GH_BROWSER=echo gh auth login     --hostname github.com     --git-protocol https     --web     </dev/tty
+  gh auth login --hostname github.com </dev/tty
 
   gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
-  gh auth setup-git >/dev/null 2>&1 || fail "Gagal mengatur Git HTTPS."
-  ok "GitHub authentication aktif melalui HTTPS."
+  gh auth setup-git >/dev/null 2>&1 || fail "Gagal mengatur Git credential helper."
+  ok "GitHub authentication aktif."
 }
 
 fetch_installer(){
