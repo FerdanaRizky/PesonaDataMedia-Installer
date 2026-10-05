@@ -64,19 +64,72 @@ check_aapanel(){
 }
 
 install_dependencies(){
-  command -v git >/dev/null 2>&1 || install_pkg git
-  command -v curl >/dev/null 2>&1 || install_pkg curl ca-certificates
+  case "$PKG" in
+    apt)
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update -y
+      apt-get install -y git curl ca-certificates wget
+      ;;
+    dnf)
+      dnf install -y git curl ca-certificates wget
+      ;;
+    yum)
+      yum install -y git curl ca-certificates wget
+      ;;
+    zypper)
+      zypper --non-interactive refresh
+      zypper --non-interactive install git curl ca-certificates wget
+      ;;
+    apk)
+      apk add --no-cache git curl ca-certificates wget
+      ;;
+  esac
+}
 
-  if ! command -v gh >/dev/null 2>&1; then
-    install_pkg gh || true
+install_gh(){
+  if command -v gh >/dev/null 2>&1; then
+    return 0
   fi
 
-  command -v gh >/dev/null 2>&1 || fail "GitHub CLI (gh) tidak tersedia pada OS ini."
+  case "$PKG" in
+    apt)
+      mkdir -p -m 755 /etc/apt/keyrings
+      wget -q -O /etc/apt/keyrings/githubcli-archive-keyring.gpg         https://cli.github.com/packages/githubcli-archive-keyring.gpg
+      chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"         > /etc/apt/sources.list.d/github-cli.list
+      apt-get update -y
+      apt-get install -y gh
+      ;;
+    dnf)
+      dnf install -y 'dnf-command(config-manager)' || true
+      dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo ||         dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+      dnf install -y gh --repo gh-cli || dnf install -y gh
+      ;;
+    yum)
+      yum install -y yum-utils
+      yum-config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+      yum install -y gh
+      ;;
+    zypper)
+      zypper --non-interactive install gh
+      ;;
+    apk)
+      apk add --no-cache gh
+      ;;
+    *)
+      fail "Tidak dapat memasang GitHub CLI pada OS ini."
+      ;;
+  esac
+
+  command -v gh >/dev/null 2>&1 || fail "GitHub CLI (gh) tidak tersedia."
 }
 
 github_login(){
+  mkdir -p "$GH_CONFIG_DIR" "$(dirname "$GIT_CONFIG_GLOBAL")"
+
   if gh auth status --hostname github.com >/dev/null 2>&1; then
-    ok "GitHub sudah login untuk sesi installer."
+    ok "GitHub sudah login untuk sesi installer ini."
+    gh auth setup-git >/dev/null 2>&1 || true
     return 0
   fi
 
@@ -85,30 +138,19 @@ github_login(){
   echo "                    GITHUB LOGIN"
   echo "============================================================"
   echo
-  echo "Metode Git: HTTPS saja. SSH tidak digunakan."
+  echo "Git protocol : HTTPS"
+  echo "SSH          : TIDAK DIGUNAKAN"
   echo
-  read -r -p "GitHub Username: " GITHUB_USERNAME </dev/tty
-  read -r -s -p "GitHub Token   : " GITHUB_TOKEN </dev/tty
+  echo "Login akan memakai HTTPS dan device code."
+  echo "Buka https://github.com/login/device dari HP/PC Anda."
   echo
-
-  if [ -z "$GITHUB_USERNAME" ] || [ -z "$GITHUB_TOKEN" ]; then
-    fail "Username atau token kosong."
-  fi
 
   gh config set git_protocol https --host github.com
 
-  if ! printf "%s\n" "$GITHUB_TOKEN" | gh auth login --hostname github.com --with-token >/dev/null 2>&1; then
-    fail "Login GitHub gagal."
-  fi
+  GH_BROWSER=echo gh auth login     --hostname github.com     --git-protocol https     --web     </dev/tty
 
-  gh auth setup-git >/dev/null 2>&1 || true
-
-  AUTH_USER="$(gh api user --jq ".login" 2>/dev/null || true)"
-  if [ "$AUTH_USER" != "$GITHUB_USERNAME" ]; then
-    gh auth logout --hostname github.com >/dev/null 2>&1 || true
-    fail "Username tidak cocok dengan token GitHub."
-  fi
-
+  gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
+  gh auth setup-git >/dev/null 2>&1 || fail "Gagal mengatur Git HTTPS."
   ok "GitHub authentication aktif melalui HTTPS."
 }
 
@@ -151,6 +193,7 @@ echo "  Package Manager : $PKG"
 echo
 
 install_dependencies
+install_gh
 github_login
 fetch_installer
 
