@@ -80,9 +80,8 @@ github_login(){
     echo "                    GITHUB LOGIN"
     echo "============================================================"
     echo
-    echo "Server ini menggunakan terminal/headless mode."
-    echo "Kode login akan muncul di bawah."
-    echo "Buka URL device dari komputer/HP Anda dan masukkan kode tersebut."
+    echo "Kode token akan muncul di bawah."
+    echo "Konfirmasi owner Pesona Wifi untuk lanjut."
     echo
     gh config set browser /bin/true
     gh auth login --hostname github.com --web </dev/tty
