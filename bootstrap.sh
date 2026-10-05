@@ -7,6 +7,7 @@ TMP="/tmp/pesonawifi-installer.sh"
 
 OS_NAME="unknown"
 PKG=""
+GH_BOOTSTRAP_LOGIN=0
 
 info(){ echo "[INFO] $1"; }
 ok(){ echo "[ OK ] $1"; }
@@ -110,6 +111,15 @@ fetch_installer(){
 
 cleanup(){
   rm -f "$TMP" 2>/dev/null || true
+
+  if [ "$GH_BOOTSTRAP_LOGIN" -eq 1 ] && command -v gh >/dev/null 2>&1; then
+    echo
+    echo "============================================================"
+    echo "                  GITHUB LOGOUT"
+    echo "============================================================"
+    gh auth logout --hostname github.com --yes >/dev/null 2>&1 || true
+    ok "GitHub logout selesai."
+  fi
 }
 trap cleanup EXIT
 
