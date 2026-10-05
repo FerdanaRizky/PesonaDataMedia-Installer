@@ -81,7 +81,7 @@ github_login(){
     echo "============================================================"
     echo
     echo "Kode token akan muncul di bawah."
-    echo "Konfirmasi owner Pesona Wifi untuk lanjut."
+    echo "Konfirmasi owner untuk lanjut."
     echo
     gh config set browser /bin/true
     gh auth login --hostname github.com --web </dev/tty
