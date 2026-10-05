@@ -88,6 +88,7 @@ github_login(){
     echo
     mkdir -p "$GH_CONFIG_DIR"
     mkdir -p "$(dirname "$GIT_CONFIG_GLOBAL")"
+    gh config set git_protocol https --host github.com
     GH_BROWSER=echo gh auth login --hostname github.com --web </dev/tty
   fi
 
