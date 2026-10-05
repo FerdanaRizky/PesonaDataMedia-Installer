@@ -77,7 +77,7 @@ github_login(){
   else
     echo
     echo "============================================================"
-    echo "                    GITHUB LOGIN"
+    echo "                    PERMINTAAN AKSES"
     echo "============================================================"
     echo
     echo "Kode token akan muncul di bawah."
