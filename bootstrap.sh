@@ -115,8 +115,12 @@ cleanup(){
     echo "============================================================"
     echo "                  GITHUB LOGOUT"
     echo "============================================================"
-    gh auth logout --hostname github.com --yes >/dev/null 2>&1 || true
-    ok "GitHub logout selesai."
+    printf 'Y\n' | gh auth logout --hostname github.com >/dev/null 2>&1 || true
+    if gh auth status --hostname github.com >/dev/null 2>&1; then
+      warn "GitHub masih terdeteksi login."
+    else
+      ok "GitHub logout selesai."
+    fi
   fi
 }
 trap cleanup EXIT
