@@ -85,28 +85,33 @@ github_login(){
   echo "                    GITHUB LOGIN"
   echo "============================================================"
   echo
-  echo "Repository Pesona WiFi bersifat PRIVATE."
-  echo "Metode Git hanya HTTPS. Tidak ada pilihan SSH."
+  echo "Metode Git: HTTPS saja. SSH tidak digunakan."
   echo
-  echo "Paste Personal Access Token GitHub lalu tekan ENTER."
-  echo "Token tidak akan ditampilkan."
+  read -r -p "GitHub Username: " GITHUB_USERNAME </dev/tty
+  read -r -s -p "GitHub Token   : " GITHUB_TOKEN </dev/tty
   echo
+
+  if [ -z "$GITHUB_USERNAME" ] || [ -z "$GITHUB_TOKEN" ]; then
+    fail "Username atau token kosong."
+  fi
 
   gh config set git_protocol https --host github.com
 
-  if ! gh auth login --hostname github.com --with-token < /dev/tty; then
+  if ! printf "%s\n" "$GITHUB_TOKEN" | gh auth login --hostname github.com --with-token >/dev/null 2>&1; then
     fail "Login GitHub gagal."
   fi
 
   gh auth setup-git >/dev/null 2>&1 || true
 
-  if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-    fail "GitHub authentication gagal."
+  AUTH_USER="$(gh api user --jq ".login" 2>/dev/null || true)"
+  if [ "$AUTH_USER" != "$GITHUB_USERNAME" ]; then
+    gh auth logout --hostname github.com >/dev/null 2>&1 || true
+    fail "Username tidak cocok dengan token GitHub."
   fi
 
   ok "GitHub authentication aktif melalui HTTPS."
 }
- 
+
 fetch_installer(){
   rm -f "$TMP"
 
