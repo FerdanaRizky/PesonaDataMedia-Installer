@@ -149,13 +149,14 @@ github_login(){
 
   echo
   echo "============================================================"
-  echo "                    GITHUB LOGIN"
+  echo "                    Akses Install"
   echo "============================================================"
   echo
-  echo "Login menggunakan alur interaktif GitHub CLI."
   echo "Pilih HTTPS saat diminta."
-  echo "Jawab Yes untuk menggunakan GitHub credentials."
-  echo "Kode autentikasi akan muncul di terminal."
+  echo "Jawab Yes untuk lanjut."
+  echo "Pilih Login with a web browser."
+  echo "Kode autentikasi akan muncul dibawah."
+  echo "Konfirmasi owner untuk melanjutkan."
   echo
   gh auth login --hostname github.com </dev/tty
 
