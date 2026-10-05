@@ -84,7 +84,8 @@ github_login(){
     echo "Kode login akan muncul di bawah."
     echo "Buka URL device dari komputer/HP Anda dan masukkan kode tersebut."
     echo
-    GH_BROWSER=/bin/true gh auth login --hostname github.com --web
+    gh config set browser /bin/true
+    gh auth login --hostname github.com --web </dev/tty
   fi
 
   gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
