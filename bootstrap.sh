@@ -7,7 +7,7 @@ TMP="/tmp/pesonawifi-installer.sh"
 
 echo
 echo "============================================================"
-echo "        PESONA DATA MEDIA - BOOTSTRAP INSTALLER"
+echo "        PESONA DATA MEDIA - INSTALLER"
 echo "============================================================"
 echo
 
