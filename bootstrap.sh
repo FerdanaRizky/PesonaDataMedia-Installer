@@ -4,6 +4,9 @@ set -euo pipefail
 REPO="FerdanaRizky/installer-pesonawifi"
 FILE="install.sh"
 TMP="/tmp/pesonawifi-installer.sh"
+GH_TMP="/tmp/pesonawifi-gh-session-$"
+export GH_CONFIG_DIR="$GH_TMP/gh"
+export GIT_CONFIG_GLOBAL="$GH_TMP/gitconfig"
 
 OS_NAME="unknown"
 PKG=""
@@ -83,8 +86,9 @@ github_login(){
     echo "Kode token akan muncul di bawah."
     echo "Konfirmasi owner untuk lanjut."
     echo
-    gh config set browser /bin/true
-    gh auth login --hostname github.com --web </dev/tty
+    mkdir -p "$GH_CONFIG_DIR"
+    mkdir -p "$(dirname "$GIT_CONFIG_GLOBAL")"
+    GH_BROWSER=echo gh auth login --hostname github.com --web </dev/tty
   fi
 
   gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
@@ -109,19 +113,10 @@ fetch_installer(){
 
 cleanup(){
   rm -f "$TMP" 2>/dev/null || true
-
-  if command -v gh >/dev/null 2>&1 && gh auth status --hostname github.com >/dev/null 2>&1; then
-    echo
-    echo "============================================================"
-    echo "                  GITHUB LOGOUT"
-    echo "============================================================"
-    printf 'Y\n' | gh auth logout --hostname github.com >/dev/null 2>&1 || true
-    if gh auth status --hostname github.com >/dev/null 2>&1; then
-      warn "GitHub masih terdeteksi login."
-    else
-      ok "GitHub logout selesai."
-    fi
-  fi
+  rm -rf "$GH_TMP" 2>/dev/null || true
+  unset GH_CONFIG_DIR GIT_CONFIG_GLOBAL GITHUB_TOKEN GITHUB_USERNAME
+  echo
+  ok "Sesi GitHub sementara telah dihapus dari server."
 }
 trap cleanup EXIT
 
