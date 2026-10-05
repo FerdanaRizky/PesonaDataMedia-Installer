@@ -89,34 +89,35 @@ install_dependencies(){
 install_gh(){
   local need_upgrade=0
 
-  if ! command -v gh >/dev/null 2>&1; then
-    need_upgrade=1
-  else
+  if command -v gh >/dev/null 2>&1; then
     if ! gh auth login --help 2>&1 | grep -q -- "--git-protocol"; then
       need_upgrade=1
     fi
+  else
+    need_upgrade=1
   fi
 
   if [ "$need_upgrade" -eq 0 ]; then
     return 0
   fi
 
-  info "Memasang GitHub CLI resmi terbaru..."
+  info "Memasang/memperbarui GitHub CLI resmi..."
 
   case "$PKG" in
     apt)
       mkdir -p -m 755 /etc/apt/keyrings
-      wget -q -O /etc/apt/keyrings/githubcli-archive-keyring.gpg         https://cli.github.com/packages/githubcli-archive-keyring.gpg
+      wget -q -O /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+        https://cli.github.com/packages/githubcli-archive-keyring.gpg
       chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"         > /etc/apt/sources.list.d/github-cli.list
-
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+        > /etc/apt/sources.list.d/github-cli.list
       apt-get update -y
       apt-get install -y gh
       ;;
     dnf)
       dnf install -y 'dnf-command(config-manager)' || true
-      dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo ||         dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
+      dnf config-manager addrepo --from-repofile=https://cli.github.com/packages/rpm/gh-cli.repo || \
+        dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
       dnf install -y gh --repo gh-cli || dnf install -y gh
       ;;
     yum)
@@ -136,6 +137,8 @@ install_gh(){
   esac
 
   command -v gh >/dev/null 2>&1 || fail "GitHub CLI (gh) tidak tersedia."
+  gh auth login --help 2>&1 | grep -q -- "--git-protocol" || \
+    fail "GitHub CLI terlalu lama dan belum mendukung HTTPS-only login."
 }
 github_login(){
   if gh auth status --hostname github.com >/dev/null 2>&1; then
@@ -149,21 +152,16 @@ github_login(){
   echo "                    GITHUB LOGIN"
   echo "============================================================"
   echo
-  echo "Git protocol : HTTPS"
-  echo "SSH          : TIDAK DIGUNAKAN"
-  echo
+  echo "Login menggunakan alur interaktif GitHub CLI."
   echo "Pilih HTTPS saat diminta."
-  echo "Pilih Yes untuk menggunakan GitHub credentials."
-  echo "Kode device akan muncul di terminal."
+  echo "Jawab Yes untuk menggunakan GitHub credentials."
+  echo "Kode autentikasi akan muncul di terminal."
   echo
-  gh config set git_protocol https --host github.com
-  gh config set browser echo --host github.com
-
-  gh auth login     --hostname github.com     --git-protocol https     --skip-ssh-key     </dev/tty
+  gh auth login --hostname github.com </dev/tty
 
   gh auth status --hostname github.com >/dev/null 2>&1 || fail "Login GitHub gagal."
   gh auth setup-git >/dev/null 2>&1 || fail "Gagal mengatur Git credential helper."
-  ok "GitHub authentication aktif melalui HTTPS."
+  ok "GitHub authentication aktif."
 }
 
 fetch_installer(){
