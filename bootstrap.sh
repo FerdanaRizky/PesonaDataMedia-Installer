@@ -87,21 +87,11 @@ install_dependencies(){
 }
 
 install_gh(){
-  local need_upgrade=0
-
   if command -v gh >/dev/null 2>&1; then
-    if ! gh auth login --help 2>&1 | grep -q -- "--git-protocol"; then
-      need_upgrade=1
-    fi
-  else
-    need_upgrade=1
-  fi
-
-  if [ "$need_upgrade" -eq 0 ]; then
     return 0
   fi
 
-  info "Memasang/memperbarui GitHub CLI resmi..."
+  info "Memasang GitHub CLI resmi..."
 
   case "$PKG" in
     apt)
@@ -137,8 +127,6 @@ install_gh(){
   esac
 
   command -v gh >/dev/null 2>&1 || fail "GitHub CLI (gh) tidak tersedia."
-  gh auth login --help 2>&1 | grep -q -- "--git-protocol" || \
-    fail "GitHub CLI terlalu lama dan belum mendukung HTTPS-only login."
 }
 github_login(){
   if gh auth status --hostname github.com >/dev/null 2>&1; then
