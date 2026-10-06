@@ -91,7 +91,7 @@ install_gh(){
     return 0
   fi
 
-  info "Memasang GitHub CLI resmi..."
+  info "Memeriksa GitHub CLI..."
 
   case "$PKG" in
     apt)
