@@ -196,7 +196,6 @@ echo
 
 [ "$(id -u)" -eq 0 ] || fail "Jalankan sebagai root."
 detect_os
-check_aapanel
 
 echo "  OS              : $OS_NAME"
 echo "  Package Manager : $PKG"
